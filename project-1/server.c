@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     struct sockaddr_in changeServAddr;		/* Local address */
     struct sockaddr_in changeClntAddr;		/* Client address */
     unsigned short changeServPort;		/* Server port */
-    unsigned int clntLen;			/* Length of address data struct */
+    socklen_t clntLen;			/* Length of address data struct */
 
     char nameBuf[BUFSIZE];			/* Buff to store name from client */
     unsigned char md_value[EVP_MAX_MD_SIZE];	/* Buff to store change result */
@@ -38,44 +38,68 @@ int main(int argc, char *argv[])
     const EVP_MD *md;				/* Digest data structure declaration */
     int md_len;					/* Digest data structure size tracking */
 
+    ssize_t numBytes;
 
     /* Create new TCP Socket for incoming requests*/
-    /*	    FILL IN	*/
-
-    /* Construct local address structure*/
-    /*	    FILL IN	*/
-    
-    /* Bind to local address structure */
-    /*	    FILL IN	*/
-
-    /* Listen for incoming connections */
-    /*	    FILL IN	*/
-
-    /* Loop server forever*/
-    while(1)
-    {
-
-	/* Accept incoming connection */
-	/*	FILL IN	    */
-
-	/* Extract Your Name from the packet, store in nameBuf */
-	/*	FILL IN	    */
-
-
-	/* Run this and return the final value in md_value to client */
-	/* Takes the client name and changes it */
-	/* Students should NOT touch this code */
-	  OpenSSL_add_all_digests();
-	  md = EVP_get_digestbyname("SHA256");
-	  mdctx = EVP_MD_CTX_create();
-	  EVP_DigestInit_ex(mdctx, md, NULL);
-	  EVP_DigestUpdate(mdctx, nameBuf, strlen(nameBuf));
-	  EVP_DigestFinal_ex(mdctx, md_value, &md_len);
-	  EVP_MD_CTX_destroy(mdctx);
-
-	/* Return md_value to client */
-	/*	FILL IN	    */
-
+    if ((serverSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+        printf("Could not create socket.");
+        exit(1);
     }
 
+    /* Construct local address structure*/
+    memset(&changeServAddr, 0, sizeof(changeServAddr));
+    changeServAddr.sin_family = AF_INET;
+    changeServAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    changeServAddr.sin_port = htons(1234);
+    
+    /* Bind to local address structure */
+    if (bind(serverSock, (struct sockaddr *) &changeServAddr, sizeof(changeServAddr)) < 0) {
+        printf("bind() failed.");
+        exit(1);
+    }
+
+    /* Listen for incoming connections */
+    if (listen(serverSock, 5) < 0) {
+        printf("listen() failed.");
+        exit(1);
+    }
+
+    /* Loop server forever*/
+    while(1) {
+        /* Accept incoming connection */
+        clntLen = sizeof(changeClntAddr);
+        clientSock = accept(serverSock, (struct sockaddr *) &changeClntAddr, &clntLen);
+        if (clientSock < 0) {
+            printf("accept() failed.");
+            exit(1);
+        }
+
+        /* Extract Your Name from the packet, store in nameBuf */
+        numBytes = recv(clientSock, nameBuf, BUFSIZE - 1, 0);
+        if (numBytes < 0) {
+            printf("recv() failed.");
+            exit(1);
+        } else if (numBytes == 0) {
+            printf("recv() connection closed prematurely.");
+            exit(1);
+        }
+
+        /* Run this and return the final value in md_value to client */
+        /* Takes the client name and changes it */
+        /* Students should NOT touch this code */
+        OpenSSL_add_all_digests();
+        md = EVP_get_digestbyname("SHA256");
+        mdctx = EVP_MD_CTX_create();
+        EVP_DigestInit_ex(mdctx, md, NULL);
+        EVP_DigestUpdate(mdctx, nameBuf, strlen(nameBuf));
+        EVP_DigestFinal_ex(mdctx, md_value, &md_len);
+        EVP_MD_CTX_destroy(mdctx);
+
+        /* Return md_value to client */
+        numBytes = send(clientSock, md_value, md_len, 0);
+        if (numBytes < 0) {
+            printf("send() failed.");
+            exit(1);
+        }
+    }
 }

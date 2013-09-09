@@ -36,34 +36,54 @@ int main(int argc, char *argv[])
     
     int i;			    /* Counter Value */
 
+    ssize_t numBytes;
+
     /* Get the Student Name from the command line */
-    if (argc != 2) 
-    {
-	printf("Incorrect input format. The correct format is:\n\tnameChanger your_name\n");
-	exit(1);
+    if (argc != 2) {
+        printf("Incorrect input format. The correct format is:\n\tnameChanger your_name\n");
+        exit(1);
     }
+
     studentName = argv[1];
-    memset(&sndBuf, 0, RCVBUFSIZE);
+    memset(&sndBuf, 0, SNDBUFSIZE);
     memset(&rcvBuf, 0, RCVBUFSIZE);
+    strcpy(sndBuf, studentName);
 
     /* Create a new TCP socket*/
-    /*	    FILL IN	*/
-
+    clientSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (clientSock < 0) {
+        printf("Could not create socket.");
+        exit(1);
+    }
 
     /* Construct the server address structure */
-    /*	    FILL IN	 */
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_port = htons(1234);
 
+    /* Establish connection to the server */
+    if (connect(clientSock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+        printf("Could not connect to server.");
+        exit(1);
+    }
 
-    /* Establish connecction to the server */
-    /*	    FILL IN	 */
-
-    
     /* Send the string to the server */
-    /*	    FILL IN	 */
-
+    numBytes = send(clientSock, sndBuf, SNDBUFSIZE, 0);
+    if (numBytes < 0) {
+        printf("send() failed.");
+        exit(1);
+    }
 
     /* Receive and print response from the server */
-    /*	    FILL IN	 */
+    numBytes = recv(clientSock, rcvBuf, RCVBUFSIZE - 1, 0);
+    if (numBytes < 0) {
+        printf("recv() failed.");
+        exit(1);
+    } else if (numBytes == 0) {
+        printf("recv() connection closed prematurely.");
+        exit(1);
+    }
 
     printf("%s\n", studentName);
     printf("Transformed input is: ");
