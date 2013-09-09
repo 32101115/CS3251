@@ -1,7 +1,7 @@
 /*///////////////////////////////////////////////////////////
 *
 * FILE:		server.c
-* AUTHOR:	Your Name Here
+* AUTHOR:	Patrick Stoica
 * PROJECT:	CS 3251 Project 1 - Professor Traynor
 * DESCRIPTION:	Network Server Code
 *
