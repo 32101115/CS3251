@@ -76,18 +76,28 @@ int main(int argc, char *argv[])
     }
 
     /* Receive and print response from the server */
-    numBytes = recv(clientSock, rcvBuf, RCVBUFSIZE - 1, 0);
-    if (numBytes < 0) {
-        printf("recv() failed.");
-        exit(1);
-    } else if (numBytes == 0) {
-        printf("recv() connection closed prematurely.");
-        exit(1);
-    }
+    unsigned int totalBytesRcvd = 0;
 
     printf("%s\n", studentName);
     printf("Transformed input is: ");
-    for(i = 0; i < MDLEN; i++) printf("%02x", rcvBuf[i]);
+
+    while (totalBytesRcvd < MDLEN) {
+        memset(&rcvBuf, 0, RCVBUFSIZE);
+
+        numBytes = recv(clientSock, rcvBuf, RCVBUFSIZE - 1, 0);
+        if (numBytes < 0) {
+            printf("recv() failed.");
+            exit(1);
+        } else if (numBytes == 0) {
+            printf("recv() connection closed prematurely.");
+            exit(1);
+        }
+
+        for(i = 0; i < numBytes; i++) printf("%02x", (unsigned char) rcvBuf[i]);
+
+        totalBytesRcvd += numBytes;
+    }
+
     printf("\n");
 
     return 0;
